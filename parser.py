@@ -16,6 +16,7 @@ details_list = []
 color_list = []
 url_list = []
 cat_url_list = []
+count_photo = 0
 
 proxy = {'HTTPS': '163.172.182.164:3128'}
 SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(basedir, 'calvin.db')
@@ -60,21 +61,7 @@ def get_html(url):
             print(html.status_code)
             continue
 
-
-# def get_url(url):
-#     browser = webdriver.Chrome()
-#     browser.get(url)
-#     url_block = browser.find_elements_by_class_name('productThumbnail.requested')
-#     time.sleep(5)
-#     for link in url_block:
-#         url = link.get_attribute('href')
-#         url_list.append(url)
-#
-#     browser.quit()
-#     time.sleep(60)
-#     return url_list
-
-def parser_content(html):
+def parser_content(html, image_list):
     # порсит все данные из карточки кроме фото, подумать разбить на несколько функций
     soup = BeautifulSoup(html.text, 'html.parser')
     # имя товара
@@ -113,11 +100,12 @@ def parser_content(html):
             color_list.append(color['data-color-swatch'])
     except:
         color_list.append(None)
-    print(product_name, price, price_sale, discount, size_list, color_list, details_list)
+    universal_id = soup.find('div', class_='universalStyleNumber').find_all('span')[1].text
+    print(product_name, price, price_sale, discount, size_list, color_list, details_list, universal_id)
     count = 1
     Session = sessionmaker(bind=db_engine)
     session = Session()
-    new_element = Calvin(product_name, price, price_sale, discount, ','.join(size_list), ','.join(color_list), count, ','.join(details_list))
+    new_element = Calvin(product_name, price, price_sale, discount, ','.join(size_list), ','.join(color_list), ','.join(image_list), ','.join(details_list), universal_id)
     session.add(new_element)
     session.commit()
     count+=1
@@ -137,17 +125,26 @@ def create_dir_name(cat_url):
 
 
 def get_photo(html, dir_name):
-    photo_name = 0
+    image_list = []
     soup = BeautifulSoup(html.content, 'html.parser')
     image_url = soup.find('div', class_='product_main_image').find('img')['data-src']
-    try:
-        photo_name = random.randint(1, 100000)
-        file_obj = requests.get(image_url, stream=True)
-        with open(dir_name+'/'+str(photo_name)+'.JPG', 'bw') as photo:
-            for chunk in file_obj.iter_content(8192):
-                photo.write(chunk)
-    except:
-        print('Error file_obj')
+    image_list.append(image_url)
+    image_list.append(image_url.replace('main', 'alternate1'))
+    image_list.append(image_url.replace('main', 'alternate2'))
+    image_list.append(image_url.replace('main', 'alternate3'))
+    for img in image_list:
+        try:
+            global count_photo
+            photo_name = count_photo
+            file_obj = requests.get(img, stream=True)
+            with open(dir_name+'/'+str(photo_name)+'.JPG', 'bw') as photo:
+                for chunk in file_obj.iter_content(8192):
+                    photo.write(chunk)
+            count_photo +=1
+            image_list.append(str(photo_name))
+        except:
+            print('Error file_obj')
+    return image_list
 
 
 def get_page_size(html):
@@ -180,8 +177,8 @@ def main():
         dir_name = create_dir_name(cat_url)
         for url in url_list:
             html = get_html(url)
-            get_photo(html, dir_name)
-            parser_content(html)
+            image_list = get_photo(html, dir_name)
+            parser_content(html, image_list)
 
 
 
