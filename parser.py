@@ -123,9 +123,8 @@ def parser_content(html, image_list):
 
 
 
-def create_dir_name(cat_url):
-    html = get_html(cat_url)
-    dir_name = html.url[html.url.find('-') + 1:]
+def create_dir_name():
+    dir_name = 'images'
     try:
         os.mkdir(dir_name)
     except OSError:
@@ -147,11 +146,12 @@ def get_photo(html, dir_name):
             global count_photo
             photo_name = count_photo
             file_obj = requests.get(img, stream=True)
-            with open(dir_name+'/'+str(photo_name)+'.JPG', 'bw') as photo:
-                for chunk in file_obj.iter_content(8192):
-                    photo.write(chunk)
-            count_photo +=1
-            img_name.append(str(photo_name))
+            if file_obj.status_code == 200:
+                with open(dir_name+'/'+str(photo_name)+'.JPG', 'bw') as photo:
+                    for chunk in file_obj.iter_content(8192):
+                        photo.write(chunk)
+                count_photo +=1
+                img_name.append(str(photo_name))
         except:
             print('Error file_obj')
     return img_name
@@ -179,15 +179,15 @@ def get_url_category(cat_url, payload):
 
 
 def main():
-    count = 1
+    dir_name = create_dir_name()
     cat_url_list = read_file_url()
     for cat_url in cat_url_list:
         url_list = get_url_category(cat_url, get_page_size(get_html(cat_url)))
-        dir_name = create_dir_name(cat_url)
-        for url in url_list:
-            html = get_html(url)
-            image_list = get_photo(html, dir_name)
-            parser_content(html, image_list)
+    print(len(url_list))
+    for url in url_list:
+        html = get_html(url)
+        image_list = get_photo(html, dir_name)
+        parser_content(html, image_list)
 
 
 
