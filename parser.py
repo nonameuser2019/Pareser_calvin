@@ -41,7 +41,7 @@ session = Session()
 def read_file_url():
     with open('input.txt', 'r') as file:
         for line in file:
-            cat_url_list.append(line)
+            cat_url_list.append(line.strip('\n'))
     return cat_url_list
 
 
@@ -86,7 +86,6 @@ def parser_content(html, image_list):
         for li in block_size:
             if li['class'] == ['available']:
                 size_list.append(li.find('span').text)
-                print(li.find('span').text)
     except:
         print(f'Size {None}')
     # маркированый список Details с доп инфой снизу карточки
@@ -94,28 +93,34 @@ def parser_content(html, image_list):
     for details in details_group.find_all('li'):
         details_list.append(details.text)
     # цветовая схема
+    # try:
+    #     radiogrup = soup.find('ul', class_='productswatches')
+    #     for color in radiogrup.find_all('li'):
+    #         color_list.append(color['data-color-swatch'])
+    # except:
+    #     color_list.append(None)
+
+    # парсим 1 цвет
     try:
-        radiogrup = soup.find('ul', class_='productswatches')
-        for color in radiogrup.find_all('li'):
-            color_list.append(color['data-color-swatch'])
+        color = soup.find('ul', class_='productswatches').find('li', class_='active')['data-color-swatch']
     except:
-        color_list.append(None)
+        color = None
     # айди обьявления
     universal_id = soup.find('div', class_='universalStyleNumber').find_all('span')[1].text
     # парсим категорию товара
     category = soup.find('div', id='breadcrumb').find_all('a')[-2].text + ' ' + \
                soup.find('div', id='breadcrumb').find_all('a')[-1].text
-    print(product_name, price, price_sale, discount, size_list, color_list, details_list, universal_id, category)
     count = 1
     Session = sessionmaker(bind=db_engine)
     session = Session()
-    new_element = Calvin(product_name, price, price_sale, discount, ','.join(size_list), ','.join(color_list), ','.join(image_list), ','.join(details_list), universal_id, category)
+    new_element = Calvin(product_name, price, price_sale, discount, ','.join(size_list), color, ','.join(image_list), ','.join(details_list), universal_id, category)
     session.add(new_element)
     session.commit()
     count+=1
     size_list.clear()
     color_list.clear()
     details_list.clear()
+
 
 
 def create_dir_name(cat_url):
@@ -130,6 +135,7 @@ def create_dir_name(cat_url):
 
 def get_photo(html, dir_name):
     image_list = []
+    img_name = []
     soup = BeautifulSoup(html.content, 'html.parser')
     image_url = soup.find('div', class_='product_main_image').find('img')['data-src']
     image_list.append(image_url)
@@ -145,11 +151,10 @@ def get_photo(html, dir_name):
                 for chunk in file_obj.iter_content(8192):
                     photo.write(chunk)
             count_photo +=1
-            image_list.append(str(photo_name))
+            img_name.append(str(photo_name))
         except:
             print('Error file_obj')
-    return image_list
-
+    return img_name
 
 def get_page_size(html):
     # парсим переменную payload
