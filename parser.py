@@ -100,12 +100,16 @@ def parser_content(html, image_list):
             color_list.append(color['data-color-swatch'])
     except:
         color_list.append(None)
+    # айди обьявления
     universal_id = soup.find('div', class_='universalStyleNumber').find_all('span')[1].text
-    print(product_name, price, price_sale, discount, size_list, color_list, details_list, universal_id)
+    # парсим категорию товара
+    category = soup.find('div', id='breadcrumb').find_all('a')[-2].text + ' ' + \
+               soup.find('div', id='breadcrumb').find_all('a')[-1].text
+    print(product_name, price, price_sale, discount, size_list, color_list, details_list, universal_id, category)
     count = 1
     Session = sessionmaker(bind=db_engine)
     session = Session()
-    new_element = Calvin(product_name, price, price_sale, discount, ','.join(size_list), ','.join(color_list), ','.join(image_list), ','.join(details_list), universal_id)
+    new_element = Calvin(product_name, price, price_sale, discount, ','.join(size_list), ','.join(color_list), ','.join(image_list), ','.join(details_list), universal_id, category)
     session.add(new_element)
     session.commit()
     count+=1

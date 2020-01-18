@@ -17,11 +17,12 @@ class Calvin(Base):
     discount = Column(String)
     size = Column(String)
     color = Column(String)
-    image_name = (String)
+    image_name = Column(String)
     details = Column(String)
     universal_id = Column(String)
+    category = Column(String)
 
-    def __init__(self, product_name, price, price_sale, discount, size, color, image_name, details, universal_id):
+    def __init__(self, product_name, price, price_sale, discount, size, color, image_name, details, universal_id, category):
         self.product_name = product_name
         self.price = price
         self.price_sale = price_sale
@@ -31,6 +32,7 @@ class Calvin(Base):
         self.image_name = image_name
         self.details = details
         self.universal_id = universal_id
+        self.category = category
 
     def __repr__(self):
         return "CData '%s'" % (self.url)
