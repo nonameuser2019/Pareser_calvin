@@ -45,10 +45,10 @@ def read_file_url():
     return cat_url_list
 
 
-def get_html(url):
+def get_html(url, payload=None):
     while True:
         time.sleep(random.randint(random.randint(6, 10), random.randint(12, 27)))
-        html = requests.get(url, headers=HEADERS, proxies=proxy)
+        html = requests.get(url, headers=HEADERS, proxies=proxy, params=None)
         if html.status_code == 200:
             print(html.status_code)
             return html
@@ -169,7 +169,7 @@ def get_page_size(html):
 def get_url_category(cat_url, payload):
     # получаем список карточек всей подкатегории товара, для этого испоользуем параметр payload
     # без payload возвращает страницу с макс 30 товарами
-    html = requests.get(cat_url, headers=HEADERS, proxies=proxy, params=payload)
+    html = get_html(cat_url, payload)
     soup = BeautifulSoup(html.content, 'html.parser')
     total_count = soup.find('div', class_='grid').find_all('div', class_='productCell')
     for link in total_count:
