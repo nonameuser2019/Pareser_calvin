@@ -92,13 +92,13 @@ def parser_content(html, image_list):
     details_group = soup.find('ul', class_='bullets')
     for details in details_group.find_all('li'):
         details_list.append(details.text)
-    # цветовая схема
-    # try:
-    #     radiogrup = soup.find('ul', class_='productswatches')
-    #     for color in radiogrup.find_all('li'):
-    #         color_list.append(color['data-color-swatch'])
-    # except:
-    #     color_list.append(None)
+    # цветовая схема доступных цветов с сайта
+    try:
+        radiogrup = soup.find('ul', class_='productswatches')
+        for color in radiogrup.find_all('li'):
+            color_list.append(color['data-color-swatch'])
+    except:
+        color_list.append(None)
 
     # парсим 1 цвет
     try:
@@ -113,7 +113,8 @@ def parser_content(html, image_list):
     count = 1
     Session = sessionmaker(bind=db_engine)
     session = Session()
-    new_element = Calvin(product_name, price, price_sale, discount, ','.join(size_list), color, ','.join(image_list), ','.join(details_list), universal_id, category)
+    new_element = Calvin(product_name, price, price_sale, discount, ','.join(size_list), color, ','.join(image_list),
+                         ','.join(details_list), universal_id, category, ','.join(color_list))
     session.add(new_element)
     session.commit()
     count+=1
