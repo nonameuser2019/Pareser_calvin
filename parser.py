@@ -64,10 +64,18 @@ def get_html(url, payload=None):
 def parser_content(html, image_list):
     # порсит все данные из карточки кроме фото, подумать разбить на несколько функций
     soup = BeautifulSoup(html.text, 'html.parser')
-    # имя товара
-    product_name = soup.find('span', class_='productNameInner').text
-    #базовая цена(без скидки)
-    price = soup.find('div', id='price_display').find_all('span')[0].text[1:]
+
+    try:
+        # имя товара
+        product_name = soup.find('span', class_='productNameInner').text
+    except:
+        product_name = None
+
+    try:
+        # базовая цена(без скидки)
+        price = soup.find('div', id='price_display').find_all('span')[0].text[1:]
+    except:
+        price = None
     try:
         # акционная цена
         price_sale = soup.find('div', id='price_display').find_all('span')[1].text[1:]
@@ -80,36 +88,50 @@ def parser_content(html, image_list):
     except:
         discount = None
 
-    # доступные размеры, на сайте все доступные размеры имеют класс available, поэтому парсим только их
     try:
+        # доступные размеры, на сайте все доступные размеры имеют класс available, поэтому парсим только их
         block_size = soup.find('ul', id='sizes').find_all('li')
         for li in block_size:
             if li['class'] == ['available']:
                 size_list.append(li.find('span').text)
     except:
         print(f'Size {None}')
-    # маркированый список Details с доп инфой снизу карточки
-    details_group = soup.find('ul', class_='bullets')
-    for details in details_group.find_all('li'):
-        details_list.append(details.text)
-    # цветовая схема доступных цветов с сайта
+
     try:
+        # маркированый список Details с доп инфой снизу карточки
+        details_group = soup.find('ul', class_='bullets')
+        for details in details_group.find_all('li'):
+            details_list.append(details.text)
+    except:
+        details_list.append(None)
+
+    try:
+        # цветовая схема доступных цветов с сайта
         radiogrup = soup.find('ul', class_='productswatches')
         for color in radiogrup.find_all('li'):
             color_list.append(color['data-color-swatch'])
     except:
         color_list.append(None)
 
-    # парсим 1 цвет
+
     try:
+        # парсим 1 цвет
         color = soup.find('ul', class_='productswatches').find('li', class_='active')['data-color-swatch']
     except:
         color = None
-    # айди обьявления
-    universal_id = soup.find('div', class_='universalStyleNumber').find_all('span')[1].text
-    # парсим категорию товара
-    category = soup.find('div', id='breadcrumb').find_all('a')[-2].text + ' ' + \
-               soup.find('div', id='breadcrumb').find_all('a')[-1].text
+
+    try:
+        # айди обьявления
+        universal_id = soup.find('div', class_='universalStyleNumber').find_all('span')[1].text
+    except:
+        universal_id = None
+
+    try:
+        # парсим категорию товара
+        category = soup.find('div', id='breadcrumb').find_all('a')[-2].text + ' ' + \
+                   soup.find('div', id='breadcrumb').find_all('a')[-1].text
+    except:
+        category = None
     count = 1
     Session = sessionmaker(bind=db_engine)
     session = Session()
@@ -117,7 +139,7 @@ def parser_content(html, image_list):
                          ','.join(details_list), universal_id, category, ','.join(color_list))
     session.add(new_element)
     session.commit()
-    count+=1
+    count += 1
     size_list.clear()
     color_list.clear()
     details_list.clear()
@@ -157,13 +179,19 @@ def get_photo(html, dir_name):
             print('Error file_obj')
     return img_name
 
+
 def get_page_size(html):
-    # парсим переменную payload
-    soup = BeautifulSoup(html.content, 'html.parser')
-    page_size = soup.find('span', class_='totalCount').text
-    payload = {
-        'pageSize': page_size
-    }
+    try:
+        # парсим переменную payload
+        soup = BeautifulSoup(html.content, 'html.parser')
+        page_size = soup.find('span', class_='totalCount').text
+        payload = {
+            'pageSize': page_size
+        }
+
+    except:
+        payload = 60
+
     return payload
 
 
@@ -172,10 +200,13 @@ def get_url_category(cat_url, payload):
     # без payload возвращает страницу с макс 30 товарами
     html = get_html(cat_url, payload)
     soup = BeautifulSoup(html.content, 'html.parser')
-    total_count = soup.find('div', class_='grid').find_all('div', class_='productCell')
-    for link in total_count:
-        url = link.find('div', class_='productImage focusParent').find('a', class_='productThumbnail')['href']
-        url_list.append(url)
+    try:
+        total_count = soup.find('div', class_='grid').find_all('div', class_='productCell')
+        for link in total_count:
+            url = link.find('div', class_='productImage focusParent').find('a', class_='productThumbnail')['href']
+            url_list.append(url)
+    except:
+        url_list.append(None)
     return url_list
 
 
