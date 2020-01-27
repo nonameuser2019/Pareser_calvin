@@ -74,10 +74,14 @@ def get_url_category(html):
         url = link.find('div', class_='productImage focusParent').find('a', class_='productThumbnail')['href']
         try:
             full_price = link.find('div', id='price_display').find_all('span')[0].text[1:]
+            if full_price.find('-') != -1:
+                full_price = full_price[: full_price.find('-')]
         except:
             full_price = None
         try:
             discount_price = link.find('div', id='price_display').find_all('span')[1].text[1:]
+            if discount_price.find('-') != -1:
+                discount_price = discount_price[: discount_price('-')]
         except:
             discount_price = None
         try:

@@ -4,10 +4,7 @@
     <list default="true" id="275e852d-03c8-4c71-b844-3eb541015270" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/calvin.db" beforeDir="false" afterPath="$PROJECT_DIR$/calvin.db" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/inp.txt" beforeDir="false" afterPath="$PROJECT_DIR$/inp.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/input.txt" beforeDir="false" afterPath="$PROJECT_DIR$/input.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/model.py" beforeDir="false" afterPath="$PROJECT_DIR$/model.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/parser.py" beforeDir="false" afterPath="$PROJECT_DIR$/parser.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/parser_price.py" beforeDir="false" afterPath="$PROJECT_DIR$/parser_price.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
