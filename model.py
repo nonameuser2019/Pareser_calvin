@@ -22,8 +22,9 @@ class Calvin(Base):
     universal_id = Column(String)
     category = Column(String)
     all_color = Column(String)
+    url = Column(String)
 
-    def __init__(self, product_name, price, price_sale, discount, size, color, image_name, details, universal_id, category, all_color):
+    def __init__(self, product_name, price, price_sale, discount, size, color, image_name, details, universal_id, category, all_color, url):
         self.product_name = product_name
         self.price = price
         self.price_sale = price_sale
@@ -35,9 +36,25 @@ class Calvin(Base):
         self.universal_id = universal_id
         self.category = category
         self.all_color = all_color
+        self.url = url
 
     def __repr__(self):
         return "CData '%s'" % (self.url)
+
+class CalvinPrice(Base):
+
+    __tablename__ = "price_product"
+    id = Column(Integer, primary_key=True)
+    price = Column(Float)
+    price_sale = Column(String)
+    discount = Column(String)
+    url = Column(String)
+
+    def __init__(self, price, price_sale, discount, url):
+        self.price = price
+        self.price_sale = price_sale
+        self.discount = discount
+        self.url = url
 
 db_engine = create_engine("sqlite:///calvin.db", echo=True)
 Base.metadata.create_all(db_engine)

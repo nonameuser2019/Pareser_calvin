@@ -48,7 +48,7 @@ def read_file_url():
 def get_html(url, payload=None):
     while True:
         time.sleep(random.randint(random.randint(6, 10), random.randint(12, 27)))
-        html = requests.get(url, headers=HEADERS, proxies=proxy, params=None)
+        html = requests.get(url, headers=HEADERS, proxies=proxy, params=payload)
         if html.status_code == 200:
             print(html.status_code)
             return html
@@ -64,7 +64,7 @@ def get_html(url, payload=None):
 def parser_content(html, image_list):
     # порсит все данные из карточки кроме фото, подумать разбить на несколько функций
     soup = BeautifulSoup(html.text, 'html.parser')
-
+    link = html.url
     try:
         # имя товара
         product_name = soup.find('span', class_='productNameInner').text
@@ -136,7 +136,7 @@ def parser_content(html, image_list):
     Session = sessionmaker(bind=db_engine)
     session = Session()
     new_element = Calvin(product_name, price, price_sale, discount, ','.join(size_list), color, ','.join(image_list),
-                         ','.join(details_list), universal_id, category, ','.join(color_list))
+                         ','.join(details_list), universal_id, category, ','.join(color_list), link)
     session.add(new_element)
     session.commit()
     count += 1
@@ -185,6 +185,7 @@ def get_page_size(html):
         # парсим переменную payload
         soup = BeautifulSoup(html.content, 'html.parser')
         page_size = soup.find('span', class_='totalCount').text
+        print(f'Page sizes : {page_size}')
         payload = {
             'pageSize': page_size
         }
@@ -195,10 +196,9 @@ def get_page_size(html):
     return payload
 
 
-def get_url_category(cat_url, payload):
+def get_url_category(html):
     # получаем список карточек всей подкатегории товара, для этого испоользуем параметр payload
     # без payload возвращает страницу с макс 30 товарами
-    html = get_html(cat_url, payload)
     soup = BeautifulSoup(html.content, 'html.parser')
     try:
         total_count = soup.find('div', class_='grid').find_all('div', class_='productCell')
@@ -214,7 +214,10 @@ def main():
     dir_name = create_dir_name()
     cat_url_list = read_file_url()
     for cat_url in cat_url_list:
-        url_list = get_url_category(cat_url, get_page_size(get_html(cat_url)))
+        html = get_html(cat_url)
+        payload = get_page_size(html)
+        print(payload)
+        url_list = get_url_category(get_html(cat_url, payload))
     print(len(url_list))
     for url in url_list:
         html = get_html(url)
