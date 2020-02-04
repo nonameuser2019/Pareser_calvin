@@ -73,12 +73,21 @@ def parser_content(html, image_list):
 
     try:
         # базовая цена(без скидки)
-        price = soup.find('div', id='price_display').find_all('span')[0].text[1:]
+        price_span = soup.find('div', id='price_display').find_all('span')[0].text[1:]
+        if price_span.find('-') != -1:
+            price = price_span
+        else:
+            price = price_span[:price_span.find('-')-1]
+        
     except:
         price = None
     try:
         # акционная цена
-        price_sale = soup.find('div', id='price_display').find_all('span')[1].text[1:]
+        price_sale_span = soup.find('div', id='price_display').find_all('span')[1].text[1:]
+        if price_sale_span.find('-') != -1:
+            price_sale = price_sale_span
+        else:
+            price_sale = price_sale_span[:price_sale_span.find('-')]
     except (IndexError, ValueError):
         price_sale = None
     try:
@@ -214,6 +223,7 @@ def main():
     dir_name = create_dir_name()
     cat_url_list = read_file_url()
     for cat_url in cat_url_list:
+        print(cat_url)
         html = get_html(cat_url)
         payload = get_page_size(html)
         print(payload)

@@ -12,7 +12,7 @@ class Calvin(Base):
 
     id = Column(Integer, primary_key=True)
     product_name = Column(String)
-    price = Column(Float)
+    price = Column(String)
     price_sale = Column(String)
     discount = Column(String)
     size = Column(String)
