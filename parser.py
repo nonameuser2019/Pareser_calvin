@@ -17,7 +17,7 @@ color_list = []
 url_list = []
 cat_url_list = []
 count_photo = 0
-
+error_count = 0
 proxy = {'HTTPS': '163.172.182.164:3128'}
 SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(basedir, 'calvin.db')
 HEADERS = {
@@ -92,8 +92,7 @@ def parser_content(html, image_list):
         price_sale = None
     try:
         # размер скидки в процентах
-        discount = soup.find('div', class_='promoTagline promoMessage').find('div').text.split()[
-            2]  # заменить регулярным выражением
+        discount = soup.find('div', class_='promoTagline promoMessage').find('div').text.split()[2]  # заменить регулярным выражением
     except:
         discount = None
 
@@ -112,7 +111,7 @@ def parser_content(html, image_list):
         for details in details_group.find_all('li'):
             details_list.append(details.text)
     except:
-        details_list.append(None)
+        details_list.append('NoDetails')
 
     try:
         # цветовая схема доступных цветов с сайта
@@ -120,7 +119,7 @@ def parser_content(html, image_list):
         for color in radiogrup.find_all('li'):
             color_list.append(color['data-color-swatch'])
     except:
-        color_list.append(None)
+        color_list.append('NoColor')
 
 
     try:
@@ -142,17 +141,20 @@ def parser_content(html, image_list):
     except:
         category = None
     count = 1
-    Session = sessionmaker(bind=db_engine)
-    session = Session()
-    new_element = Calvin(product_name, price, price_sale, discount, ','.join(size_list), color, ','.join(image_list),
-                         ','.join(details_list), universal_id, category, ','.join(color_list), link)
-    session.add(new_element)
-    session.commit()
-    count += 1
-    size_list.clear()
-    color_list.clear()
-    details_list.clear()
-
+    try:
+        Session = sessionmaker(bind=db_engine)
+        session = Session()
+        new_element = Calvin(product_name, price, price_sale, discount, ','.join(size_list), color, ','.join(image_list),
+                             ','.join(details_list), universal_id, category, ','.join(color_list), link)
+        session.add(new_element)
+        session.commit()
+        count += 1
+        size_list.clear()
+        color_list.clear()
+        details_list.clear()
+    except:
+        global error_count
+        error_count +=1
 
 
 def create_dir_name():
@@ -233,7 +235,7 @@ def main():
         html = get_html(url)
         image_list = get_photo(html, dir_name)
         parser_content(html, image_list)
-
+    print(f'Eror for parsing {error_count}')
 
 
 if __name__ == '__main__':
