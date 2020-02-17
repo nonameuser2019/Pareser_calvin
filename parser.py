@@ -7,7 +7,8 @@ import os
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine
 from model import *
-
+import json
+import re
 
 db_engine = create_engine("sqlite:///calvin.db", echo=True)
 basedir = os.path.abspath(os.path.dirname(__file__))
@@ -16,7 +17,6 @@ details_list = []
 color_list = []
 url_list = []
 cat_url_list = []
-count_photo = 0
 error_count = 0
 proxy = {'HTTPS': '163.172.182.164:3128'}
 SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(basedir, 'calvin.db')
@@ -74,36 +74,37 @@ def parser_content(html, image_list):
     try:
         # базовая цена(без скидки)
         price_span = soup.find('div', id='price_display').find_all('span')[0].text[1:]
-        if price_span.find('-') != -1:
-            price = price_span
-        else:
-            price = price_span[:price_span.find('-')-1]
-        
+        price = re.findall(r'\d*[.]\d+', price_span)[0]
     except:
         price = None
     try:
         # акционная цена
         price_sale_span = soup.find('div', id='price_display').find_all('span')[1].text[1:]
-        if price_sale_span.find('-') != -1:
-            price_sale = price_sale_span
-        else:
-            price_sale = price_sale_span[:price_sale_span.find('-')]
+        price_sale = re.findall(r'\d*[.]\d+', price_sale_span)[0]
     except (IndexError, ValueError):
         price_sale = None
+    # try:
+    #     # размер скидки в процентах
+    #     discount = soup.find('div', class_='promoTagline promoMessage').find('div').text.split()[2]  # заменить регулярным выражением
+    # except:
+    #     discount = None
     try:
-        # размер скидки в процентах
-        discount = soup.find('div', class_='promoTagline promoMessage').find('div').text.split()[2]  # заменить регулярным выражением
+        if price_sale:
+            discount = int(((float(price) - float(price_sale)) / float(price)) * 100)
+        else:
+            discount = None
     except:
         discount = None
 
-    try:
-        # доступные размеры, на сайте все доступные размеры имеют класс available, поэтому парсим только их
-        block_size = soup.find('ul', id='sizes').find_all('li')
-        for li in block_size:
-            if li['class'] == ['available']:
-                size_list.append(li.find('span').text)
-    except:
-        print(f'Size {None}')
+    # try:
+    #     # доступные размеры, на сайте все доступные размеры имеют класс available, поэтому парсим только их
+            # блок был закоментирован так как перестал корректно работать
+    #     block_size = soup.find('ul', id='sizes').find_all('li')
+    #     for li in block_size:
+    #         if li['class'] == ['available']:
+    #             size_list.append(li.find('span').text)
+    # except:
+    #     print(f'Size {None}')
 
     try:
         # маркированый список Details с доп инфой снизу карточки
@@ -124,9 +125,20 @@ def parser_content(html, image_list):
 
     try:
         # парсим 1 цвет
-        color = soup.find('ul', class_='productswatches').find('li', class_='active')['data-color-swatch']
+        color = soup.find('ul', class_='productswatches').find('li')['data-color-swatch']
     except:
         color = None
+    try:
+        # парсим все размеры
+        size = soup.find('div', id='sizeJSON').text
+        data = json.loads(size)
+        size_list = data['colorToSize'][color]
+    except(KeyError, AttributeError):
+        try:
+            size_list = data['waists'].sort()
+        except:
+            size_list = ['']
+
 
     try:
         # айди обьявления
@@ -166,6 +178,22 @@ def create_dir_name():
     return dir_name
 
 
+def chek_images():
+    # проверяет номер последней фото в папке, и при запуске парсера след фото будет +1
+    num_file = []
+    last_image = 0
+    try:
+        file_list = os.listdir('images')
+        for list in file_list:
+            num_file.append(int(re.findall(r'\d*', list)[0]))
+        num_file.sort()
+        print(num_file[-1])
+    except(IndexError):
+        num_file.append(0)
+    last_image = num_file[-1]
+    return int(last_image) + 1
+
+
 def get_photo(html, dir_name):
     image_list = []
     img_name = []
@@ -177,14 +205,12 @@ def get_photo(html, dir_name):
     image_list.append(image_url.replace('main', 'alternate3'))
     for img in image_list:
         try:
-            global count_photo
-            photo_name = count_photo
+            photo_name = chek_images()
             file_obj = requests.get(img, stream=True)
             if file_obj.status_code == 200:
                 with open(dir_name+'/'+str(photo_name)+'.JPG', 'bw') as photo:
                     for chunk in file_obj.iter_content(8192):
                         photo.write(chunk)
-                count_photo +=1
                 img_name.append(str(photo_name))
         except:
             print('Error file_obj')
@@ -222,6 +248,7 @@ def get_url_category(html):
 
 
 def main():
+    count = 1
     dir_name = create_dir_name()
     cat_url_list = read_file_url()
     for cat_url in cat_url_list:
@@ -230,11 +257,17 @@ def main():
         payload = get_page_size(html)
         print(payload)
         url_list = get_url_category(get_html(cat_url, payload))
-    print(len(url_list))
     for url in url_list:
-        html = get_html(url)
-        image_list = get_photo(html, dir_name)
-        parser_content(html, image_list)
+        card_exist = session.query(Calvin.url).filter(Calvin.url == url).count()
+        if not card_exist:
+            html = get_html(url)
+            image_list = get_photo(html, dir_name)
+            parser_content(html, image_list)
+            print(f'Всего товаров для парсинга {len(url_list)} спарсили {count}')
+            count +=1
+        else:
+            count += 1
+            print('Этот товар есть в базе, пропускаем')
     print(f'Eror for parsing {error_count}')
 
 
